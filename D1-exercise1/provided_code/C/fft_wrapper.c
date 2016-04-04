@@ -43,7 +43,7 @@ int index_f ( int i1, int i2, int i3, int n1, int n2, int n3)
 }
 
 
-void init_fftw(fftw_handler *fft, int n1, int n2, int n3)
+void init_fftw(fftw_mpi_handler *fft, int n1, int n2, int n3, MPI_Comm mpi_comm)
 {
   /*
    * Call to fftw_mpi_init is needed to initialize a parallel enviroment for the fftw_mpi
@@ -64,12 +64,12 @@ void init_fftw(fftw_handler *fft, int n1, int n2, int n3)
    * Use fftw_mpi_plan_dft_3d: http://www.fftw.org/doc/MPI-Plan-Creation.html#MPI-Plan-Creation
    *
    */
-  fft->fw_plan = 
-  fft->bw_plan = 
+  fft->fw_plan = NULL;
+  fft->bw_plan = NULL;
 
 }
 
-void close_fftw(fftw_handler *fft)
+void close_fftw(fftw_mpi_handler *fft)
 {
     fftw_destroy_plan(fft->bw_plan);
     fftw_destroy_plan(fft->fw_plan);
@@ -96,7 +96,7 @@ void close_fftw(fftw_handler *fft)
  * f(l) = 1/N \sum_{k=0}^{N-1} exp(+ 2 \pi I k*l/N) F(k)
  * 
  */
-void fft_3d(fftw_handler* fft, int n1, int n2, int n3, double *data_direct, fftw_complex* data_rec, bool direct_to_reciprocal)
+void fft_3d(fftw_mpi_handler* fft, int n1, int n2, int n3, double *data_direct, fftw_complex* data_rec, bool direct_to_reciprocal)
 {
     double fac;
     int i;

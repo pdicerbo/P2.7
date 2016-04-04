@@ -19,7 +19,7 @@
 /*
  * Calculate the derivative in direction ipol of the array 'data'
  */
-void derivative( fftw_handler* fft, int n1, int n2, int n3, double L1, double L2, double L3, int ipol, double* data, double* deriv ){
+void derivative( fftw_mpi_handler* fft, int n1, int n2, int n3, double L1, double L2, double L3, int ipol, double* data, double* deriv ){
 
     fftw_complex *aux;
     double G;

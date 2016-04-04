@@ -1,4 +1,4 @@
-CC=gcc
+CC=mpicc
 CFLAGS = -O3 -Wall -I$(FFTW_INC)
 LIBS = -L$(FFTW_LIB) -lfftw3 -lm
 EXE = diffusion.x

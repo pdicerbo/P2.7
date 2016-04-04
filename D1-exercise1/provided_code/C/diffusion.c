@@ -47,7 +47,7 @@ int main(){
   
     double f1conc, f2conc, f3conc, f1diff, f2diff, f3diff, fac, ss;
     double x1, x2 , x3, rr, r2mean;
-    fftw_handler fft_h;
+    fftw_mpi_handler fft_h;
 
     /* 
      * Initializzation of the MPI environment 
@@ -59,7 +59,7 @@ int main(){
      * as the value returned from the parallel FFT grid initializzation 
      *
      */
-    init_fftw( &fft_h, n1, n2, n3, MPI_COMM_WORLD );
+    init_fftw( &fft_h, n1, n2, n3, MPI_COMM_WORLD);
 
   
     /*
