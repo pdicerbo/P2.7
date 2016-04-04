@@ -54,7 +54,7 @@ void init_fftw(fftw_mpi_handler *fft, int n1, int n2, int n3, MPI_Comm mpi_comm)
    *  Allocate a distributed grid for complex FFT using aligned memory allocation
    *  See details here:
    *  http://www.fftw.org/fftw3_doc/Allocating-aligned-memory-in-Fortran.html#Allocating-aligned-memory-in-Fortran
-   *  HINT: the allocation size is given by fftw_mpi_local_size_3d (see also http://www.fftw.org/doc/MPI-Plan-Creation.html)
+   *  HINT: the allocation size is given by fftw_mpi_local_size_3d (see also http://www.fftw.org/doc/MPI-Data-Distribution-Functions.html)
    *
    */
   fft->fftw_data = ( fftw_complex* ) fftw_malloc( fft->local_size_grid * sizeof( fftw_complex ) );
