@@ -78,14 +78,6 @@ int main(int argc, char** argv){
      *
      */
 
-    /***
-    diffusivity = (double*)malloc(n1*n2*n3*sizeof(double));
-    conc = (double*)malloc(n1*n2*n3*sizeof(double));
-    dconc = (double*)malloc(n1*n2*n3*sizeof(double));
-    aux1 = (double*)malloc(n1*n2*n3*sizeof(double));
-    aux2 = (double*)malloc(n1*n2*n3*sizeof(double));
-    ***/
-
     diffusivity = (double*)malloc(fft_h.local_size_grid * sizeof(double));
     conc = (double*)malloc(fft_h.local_size_grid * sizeof(double));
     dconc = (double*)malloc(fft_h.local_size_grid * sizeof(double));
@@ -116,20 +108,6 @@ int main(int argc, char** argv){
             f2diff = exp( -pow((x2-0.5*L2)/rad_diff,2));
             f2conc = exp( -pow((x2-0.5*L2)/rad_conc,2));
 	    
-	    /* Original serial version */
-	    /* for (i1 = 0; i1 < n1; ++i1) */
-	    /*   { */
-	    /* 	x1=L1*((double)i1)/n1; */
-	    /* 	f1diff = exp( -pow((x1-0.5*L1)/rad_diff,2)); */
-	    /* 	f1conc = exp( -pow((x1-0.5*L1)/rad_conc,2)); */
-		
-	    /* 	index = index_f(i1, i2, i3, n1, n2, n3); */
-	    /* 	diffusivity[index]  = MAX( f1diff * f2diff, f2diff * f3diff); */
-	    /* 	conc[index] = f1conc * f2conc * f3conc; */
-	    /* 	ss += conc[index];  */
-		
-	    /*   }    */
-
 	    for (i1 = 0; i1 < fft_h.local_n1; ++i1)
 	      {
 	    	x1=L1*((double) (fft_h.local_n1_offset + i1) )/n1;
@@ -151,9 +129,6 @@ int main(int argc, char** argv){
      * HINT: The parallel version of  the output routines is provided in the mpi_output_routines folder
      *
      */
-    /* plot_data_2d("diffusivity", n1, n2, n3, 1, diffusivity); */
-    /* plot_data_2d("diffusivity", n1, n2, n3, 2, diffusivity); */
-    /* plot_data_2d("diffusivity", n1, n2, n3, 3, diffusivity); */
 
     plot_data_2d("diffusivity", n1, n2, n3, fft_h.local_n1, fft_h.local_n1_offset, 1, diffusivity);
     plot_data_2d("diffusivity", n1, n2, n3, fft_h.local_n1, fft_h.local_n1_offset, 2, diffusivity);
@@ -169,10 +144,9 @@ int main(int argc, char** argv){
      *      ss = 1.0/(ss*fac);
      *
      */
-    MPI_Allreduce(MPI_IN_PLACE, &ss, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Allreduce(MPI_IN_PLACE, &ss, 1, MPI_DOUBLE, MPI_SUM, fft_h.mpi_comm);
     ss = 1.0/(ss*fac);
 
-    /* for (i1=0; i1< n1*n2*n3; ++i1) */
     for (i1=0; i1< fft_h.local_size_grid; ++i1)
       conc[i1]*=ss;
 
@@ -186,7 +160,6 @@ int main(int argc, char** argv){
     start = seconds();
     for (istep = 1; istep <= nstep; ++istep)
       {
-	/* for (i1=0; i1< n1*n2*n3; ++i1) */
 	for (i1=0; i1< fft_h.local_size_grid; ++i1)
 	  dconc[i1] = 0.0;
         for (ipol =1; ipol<=3; ++ipol )
@@ -194,7 +167,6 @@ int main(int argc, char** argv){
 	    
 	    derivative(&fft_h, n1, n2, n3, L1, L2, L3, ipol, conc, aux1);
 	    
-	    /* for (i1=0; i1< n1*n2*n3; ++i1) */
 	    for (i1=0; i1< fft_h.local_size_grid; ++i1)
 	      {
                 aux1[i1] *= diffusivity[i1];
@@ -203,11 +175,10 @@ int main(int argc, char** argv){
 	    derivative(&fft_h, n1, n2, n3, L1, L2, L3, ipol, aux1, aux2);
 
             // summing up contributions from the three spatial directions
-	    /* for (i1=0; i1< n1*n2*n3; ++i1) */
 	    for (i1=0; i1< fft_h.local_size_grid; ++i1)
 	      dconc[i1] += aux2[i1];
-	  } 
-        /* for (i1=0; i1< n1*n2*n3; ++i1) */
+	  }
+
 	for (i1=0; i1< fft_h.local_size_grid; ++i1)
 	  conc[i1] += dt*dconc[i1];
 	
@@ -223,16 +194,6 @@ int main(int argc, char** argv){
                 for (i2 = 0; i2 < n2; ++i2)
 		  {
                     x2=L2*((double)i2)/n2 - 0.5*L2;
-
-		    /* old serial version */
-                    /* for (i1 = 0; i1 < n1; ++i1) */
-		    /*   { */
-		    /* 	x1=L1*((double)i1)/n1 - 0.5*L1; */
-		    /* 	rr = pow( x1, 2)  + pow( x2, 2) + pow( x3, 2); */
-		    /* 	index = index_f(i1, i2, i3, n1, n2, n3);  */
-		    /* 	ss += conc[index];  */
-		    /* 	r2mean += conc[index]*rr; */
-		    /*   }    */
 
                     for (i1 = 0; i1 < fft_h.local_n1; ++i1)
 		      {
@@ -256,11 +217,9 @@ int main(int argc, char** argv){
             end = seconds();
             printf(" %d %17.15f %17.15f Elapsed time per iteration %f \n ", istep, r2mean, ss, (end-start)/istep);
             // HINT: Use parallel version of output routines
-            /* plot_data_2d("concentration", n1, n2, n3, 2, conc); */
-            /* plot_data_1d("1d_conc", n1, n2, n3, 3, conc); */
 	    
 	    plot_data_2d("concentration", n1, n2, n3, fft_h.local_n1, fft_h.local_n1_offset, 2, conc);
-	    plot_data_2d("1d_conc", n1, n2, n3, fft_h.local_n1, fft_h.local_n1_offset, 3, conc);
+	    plot_data_1d("1d_conc", n1, n2, n3, fft_h.local_n1, fft_h.local_n1_offset, 3, conc);
 	  
 	  }
 	
