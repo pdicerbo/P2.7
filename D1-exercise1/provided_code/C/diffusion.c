@@ -20,12 +20,15 @@
 #include <complex.h>
 #include <fftw3.h>
 #include "utilities.h"
-// HINT: include mpi and fftw3-mpi 
+// HINT: include mpi and fftw3-mpi
 //       http://www.fftw.org/doc/MPI-Files-and-Data-Types.html#MPI-Files-and-Data-Types
+
+#include <mpi.h>
+#include <fftw3-mpi.h>
 
 #define MAX(x, y) (((x) > (y)) ? (x) : (y))
 
-int main(){
+int main(int argc, char** argv){
 
     // Dimensions of the system
     double L1 = 10., L2 = 10., L3 = 20.;
@@ -49,16 +52,24 @@ int main(){
     double x1, x2 , x3, rr, r2mean;
     fftw_mpi_handler fft_h;
 
+    // int MyID, NPE;
+
     /* 
      * Initializzation of the MPI environment 
      *
      */
-
+   
+    MPI_Init(&argc, &argv);
+    // MPI_Comm_rank(MPI_COMM_WORLD, &MyID);
+    // MPI_Comm_size(MPI_COMM_WORLD, &NPE);
+    /* fprintf(stderr, "\n\t%d\t%d\n", NPE, MyID); */
+    
     /*
      * initialize the fftw system and local dimension
      * as the value returned from the parallel FFT grid initializzation 
      *
      */
+    
     init_fftw( &fft_h, n1, n2, n3, MPI_COMM_WORLD);
 
   

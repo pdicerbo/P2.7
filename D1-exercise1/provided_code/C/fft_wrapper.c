@@ -15,6 +15,8 @@
 #include <stdbool.h>
 #include <string.h>
 #include "utilities.h"
+#include <mpi.h>
+#include <fftw3-mpi.h>
 
 double seconds(){
 
@@ -50,6 +52,8 @@ void init_fftw(fftw_mpi_handler *fft, int n1, int n2, int n3, MPI_Comm mpi_comm)
    * See also: http://www.fftw.org/doc/MPI-Initialization.html
    */
 
+  fftw_mpi_init();
+
   /*
    *  Allocate a distributed grid for complex FFT using aligned memory allocation
    *  See details here:
@@ -57,6 +61,13 @@ void init_fftw(fftw_mpi_handler *fft, int n1, int n2, int n3, MPI_Comm mpi_comm)
    *  HINT: the allocation size is given by fftw_mpi_local_size_3d (see also http://www.fftw.org/doc/MPI-Plan-Creation.html)
    *
    */
+
+  fft -> global_size_grid = n1 * n2 * n3;
+  fft -> mpi_comm = mpi_comm;
+
+  fft -> local_size_grid = fftw_mpi_local_size_3d(n1, n2, n3, fft -> mpi_comm,
+						  &(fft -> local_n1), &( fft -> local_n1_offset) );
+
   fft->fftw_data = ( fftw_complex* ) fftw_malloc( fft->local_size_grid * sizeof( fftw_complex ) );
 
   /*
@@ -64,8 +75,16 @@ void init_fftw(fftw_mpi_handler *fft, int n1, int n2, int n3, MPI_Comm mpi_comm)
    * Use fftw_mpi_plan_dft_3d: http://www.fftw.org/doc/MPI-Plan-Creation.html#MPI-Plan-Creation
    *
    */
-  fft->fw_plan = NULL;
-  fft->bw_plan = NULL;
+  /* fft->fw_plan = NULL; */
+  /* fft->bw_plan = NULL; */
+
+  fft -> fw_plan = fftw_mpi_plan_dft_3d(n1, n2, n3,
+					fft -> fftw_data, fft -> fftw_data,
+					fft -> mpi_comm, FFTW_FORWARD, FFTW_ESTIMATE);
+
+  fft -> bw_plan = fftw_mpi_plan_dft_3d(n1, n2, n3,
+					fft -> fftw_data, fft -> fftw_data,
+					fft -> mpi_comm, FFTW_BACKWARD, FFTW_ESTIMATE);
 
 }
 
