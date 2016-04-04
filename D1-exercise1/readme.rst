@@ -55,6 +55,7 @@ Apply a data distribution dividing the orginal 3D domain in a 1D decomposition a
 
 |1D-decomp|
 
+See FFTW-data-distribution_ for more information.
 The following phases of implementation should be excuted:  
 
   - distribute data structures (diffusivity, conc, dconc, aux1, aux2) accordingly to the data distribution expcted by the FFTW library 
@@ -70,6 +71,8 @@ Regarding the fftw calls. Here is the substitution:
   - use fftw_mpi_local_size_3d for local size of the arrays
  
 Parallelized version of the I/O subroutines are provided. 
+
+
 The proposed Makefiles relies on the modulefiles fftw/3.3.4/gnu/4.9.2 and openmpi/1.8.3/gnu/4.9.2 available on Ulisse.
 A reserved queue named reserved3 was created for code testing. Verify code efficiency performing a scalability test on 1, 5, 10, 20 processes.  
 
