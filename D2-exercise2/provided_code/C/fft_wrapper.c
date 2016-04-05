@@ -14,6 +14,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include "utilities.h"
+#include <complex.h>
 #include <fftw3.h>
 #include <mpi.h>
 
