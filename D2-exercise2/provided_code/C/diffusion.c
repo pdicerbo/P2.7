@@ -31,7 +31,7 @@ int main( int argc, char* argv[] ){
     // time step for time integration
     double dt = 2.e-3; 
     // number of time steps
-    int nstep = 100; 
+    int nstep = 101; 
     // Radius of diffusion channel
     double rad_diff = 0.7;
     // Radius of starting concentration
@@ -123,15 +123,20 @@ int main( int argc, char* argv[] ){
 	}   
       }
     }
-    
+
     /*
      * HINT: Parallellize the output routines 
      *
      */
-    /*    plot_data_2d( "diffusivity", n1_local, n2, n3, 1, diffusivity );
-	  plot_data_2d( "diffusivity", n1_local, n2, n3, 2, diffusivity );
-	  plot_data_2d( "diffusivity", n1_local, n2, n3, 3, diffusivity );
-    */
+
+    plot_data_2d( "diffusivity", n1, n2, n3, n1_local, fft_h.local_n1_offset, 1, diffusivity );
+    plot_data_2d( "diffusivity", n1, n2, n3, n1_local, fft_h.local_n1_offset, 2, diffusivity );
+    plot_data_2d( "diffusivity", n1, n2, n3, n1_local, fft_h.local_n1_offset, 3, diffusivity );
+
+    /* plot_data_2d( "diffusivity", n1_local, n2, n3, 1, diffusivity ); */
+    /* plot_data_2d( "diffusivity", n1_local, n2, n3, 2, diffusivity ); */
+    /* plot_data_2d( "diffusivity", n1_local, n2, n3, 3, diffusivity ); */
+    
     
     fac = L1 * L2 * L3 / ( global_size_grid );
   

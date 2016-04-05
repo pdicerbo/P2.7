@@ -14,7 +14,8 @@
 #include <stdbool.h>
 #include <string.h>
 #include "utilities.h"
-
+#include <fftw3.h>
+#include <mpi.h>
 
 double seconds(){
 /* Return the second elapsed since Epoch (00:00:00 UTC, January 1, 1970) */
@@ -64,22 +65,39 @@ void init_fftw(fftw_dist_handler *fft, int n1, int n2, int n3, MPI_Comm comm){
   fft->n1 = n1;
   fft->n2 = n2;
   fft->n3 = n3;
-  fft->local_n1 = NULL; 
-  fft->local_n1_offset = NULL;
-  fft->global_size_grid = NULL;
-  fft->local_size_grid = NULL;
+  fft->local_n1 = n1 / npes;
+  fft->local_n1_offset = n2 * n3 * mype;
+  fft->global_size_grid = n1 * n2 * n3;
+  fft->local_size_grid = n2 * n3 * n1 / npes;
 
   /*
    * Allocate fft->fftw_data and create an FFTW plan for each 1D FFT among all dimensions
    *
    */
-    fft->fw_plan_i1 = NULL;
-  fft->fw_plan_i2 = NULL;
-  fft->fw_plan_i3 = NULL;
+  buffer_size = MAX(n1, n2);
+  buffer_size = MAX(buffer_size, n3);
 
-  fft->bw_plan_i1 = NULL;
-  fft->bw_plan_i2 = NULL;
-  fft->bw_plan_i3 = NULL;
+  fft->fftw_data = ( fftw_complex* ) fftw_malloc( buffer_size * sizeof( fftw_complex ) );
+
+  // FORWARD'S PLANS
+  fft->fw_plan_i1 = fftw_plan_dft_1d(n1, fft -> fftw_data, fft -> fftw_data,
+				     FFTW_FORWARD, FFTW_ESTIMATE);
+
+  fft->fw_plan_i2 = fftw_plan_dft_1d(n2, fft -> fftw_data, fft -> fftw_data,
+				     FFTW_FORWARD, FFTW_ESTIMATE);
+
+  fft->fw_plan_i3 = fftw_plan_dft_1d(n3, fft -> fftw_data, fft -> fftw_data,
+				     FFTW_FORWARD, FFTW_ESTIMATE);
+
+  // BACKWARD'S PLANS
+  fft->bw_plan_i1 = fftw_plan_dft_1d(n1, fft -> fftw_data, fft -> fftw_data,
+				     FFTW_BACKWARD, FFTW_ESTIMATE);
+
+  fft->bw_plan_i2 = fftw_plan_dft_1d(n2, fft -> fftw_data, fft -> fftw_data,
+				     FFTW_BACKWARD, FFTW_ESTIMATE);
+
+  fft->bw_plan_i3 = fftw_plan_dft_1d(n3, fft -> fftw_data, fft -> fftw_data,
+				     FFTW_BACKWARD, FFTW_ESTIMATE);
 
 }
 
@@ -118,8 +136,8 @@ void close_fftw( fftw_dist_handler *fft ){
 void fft_3d( fftw_dist_handler* fft, double *data_direct, fftw_complex* data_rec, bool direct_to_reciprocal ){
 
   double fac;
-  int i1, i2, i3, index, start_index, end_index, index_buf, i2_loc;
-  int n2 = fft->n2, n3 = fft->n3, n1 = fft->n1, npes, block_dim, nblock;
+  int i1, i2, i3, index; //, start_index, end_index, index_buf, i2_loc;
+  int n2 = fft->n2, n3 = fft->n3, n1 = fft->n1, npes, block_dim; //, nblock;
 
   /* Allocate buffers to send and receive data */
 
@@ -127,20 +145,42 @@ void fft_3d( fftw_dist_handler* fft, double *data_direct, fftw_complex* data_rec
     
   // Now distinguish in which direction the FFT is performed
   if( direct_to_reciprocal ){
+
     /* among i3 dimension */
     for( i1 = 0; i1 < fft->local_n1; i1++ ){
       for( i2 = 0; i2 < n2; i2++ ){
 	for( i3 = 0; i3 < n3; i3++ ){
-	  
-	  // Fill the missing part 
+
+	  index = index_f(i1, i2, i3, fft -> local_n1, n2, n3);
+	  fft -> fftw_data[i3] = data_direct[index] + 0.0 * I;
+
+	}
+
+	fftw_execute_dft( fft -> fw_plan_i3, fft -> fftw_data, fft -> fftw_data);
+
+	index = index_f(i1, i2, 0, fft -> local_n1, n2, n3);
+	memcpy(&(data_rec[index]), fft->fftw_data, n3 * sizeof(fftw_complex));
+
+      }
     }
       
     /* among i2 dimension */
     for( i1 = 0; i1 < fft->local_n1; i1++ ){
       for( i3 = 0; i3 < n3; i3++ ){
 	for( i2 = 0; i2 < n2; i2++ ){
-	    
-	  // Fill the missing part 
+
+	  index = index_f(i1, i2, i3, fft -> local_n1, n2, n3);
+	  fft -> fftw_data[i2] = data_rec[index];
+
+	}
+
+	fftw_execute_dft( fft -> fw_plan_i2, fft -> fftw_data, fft -> fftw_data);
+	
+	for(i2 = 0; i2 < n2; i2++){
+
+	  index = index_f(i1, i2, i3, fft -> local_n1, n2, n3);
+	  data_rec[index] = fft -> fftw_data[i2];
+
 	}
       }
     }
@@ -154,11 +194,25 @@ void fft_3d( fftw_dist_handler* fft, double *data_direct, fftw_complex* data_rec
     // Perform an Alltoall communication 
 
     /*  among i1 dimension */
+
+    block_dim = n2 / npes;
+
     for( i3 = 0; i3 < n3; i3++ ){
-      for( i2 = 0; i2 < /*block_dim*/; i2++ ){
+      for( i2 = 0; i2 < block_dim; i2++ ){
 	for( i1 = 0; i1 < n1; i1++ ){
 	  
-	  // Fill the missing part 
+	  index = index_f(i1, i2, i3, n1, block_dim, n3);
+	  fft -> fftw_data[i1] = data_rec[index];
+
+	}
+
+	fftw_execute_dft( fft -> fw_plan_i1, fft -> fftw_data, fft -> fftw_data);
+
+	for(i1 = 0; i1 < n1; i1++){
+
+	  index = index_f(i1, i2, i3, n1, block_dim, n3);
+	  data_rec[index] = fft -> fftw_data[i1];
+
 	}
       }
     }
@@ -172,10 +226,87 @@ void fft_3d( fftw_dist_handler* fft, double *data_direct, fftw_complex* data_rec
 
   }
   else{
-    
+
+    fac = 1.0 / ( n1 * n2 * n3 );
+
     /* Implement the reverse transform */
+    /* among i3 dimension */
+    for( i1 = 0; i1 < fft->local_n1; i1++ ){
+      for( i2 = 0; i2 < n2; i2++ ){
+	for( i3 = 0; i3 < n3; i3++ ){
+
+	  index = index_f(i1, i2, i3, fft -> local_n1, n2, n3);
+	  fft -> fftw_data[i3] = data_rec[index];
+
+	}
+
+	fftw_execute_dft( fft -> bw_plan_i3, fft -> fftw_data, fft -> fftw_data);
+
+	index = index_f(i1, i2, 0, fft -> local_n1, n2, n3);
+	memcpy(&(data_rec[index]), fft->fftw_data, n3 * sizeof(fftw_complex));
+
+      }
+    }
+
+    /* among i2 dimension */
+    for( i1 = 0; i1 < fft->local_n1; i1++ ){
+      for( i3 = 0; i3 < n3; i3++ ){
+	for( i2 = 0; i2 < n2; i2++ ){
+	    
+	  index = index_f(i1, i2, i3, fft -> local_n1, n2, n3);
+	  fft -> fftw_data[i2] = data_rec[index];
+
+	}
+
+	fftw_execute_dft( fft -> bw_plan_i2, fft -> fftw_data, fft -> fftw_data);
+	
+	for(i2 = 0; i2 < n2; i2++){
+
+	  index = index_f(i1, i2, i3, fft -> local_n1, n2, n3);
+	  data_rec[index] = fft -> fftw_data[i2];
+
+	}
+      }
+    }
+
+    /*
+     * Reorder the different data blocks to be contigous in memory.
+     * The new distribution will allow to use the Alltoall function
+     *
+     */
+
+    // Perform an Alltoall communication 
+
+    /*  among i1 dimension */
+    block_dim = n2 / npes;
+
+    for( i3 = 0; i3 < n3; i3++ ){
+      for( i2 = 0; i2 < block_dim; i2++ ){
+	for( i1 = 0; i1 < n1; i1++ ){
+	  
+	  index = index_f(i1, i2, i3, n1, block_dim, n3);
+	  fft -> fftw_data[i1] = data_rec[index];
+
+	}
+
+	fftw_execute_dft( fft -> bw_plan_i1, fft -> fftw_data, fft -> fftw_data);
+
+	for(i1 = 0; i1 < n1; i1++){
+
+	  index = index_f(i1, i2, i3, n1, block_dim, n3);
+	  data_direct[index] = creal(fft -> fftw_data[i1]) * fac;
+
+	}
+      }
+    }
+
+    // Perform an Alltoall communication 
+
+    /*
+     * Reoder the different data blocks to be consistent with the initial distribution.
+     *
+     */      
 
   }
   
 }
-
