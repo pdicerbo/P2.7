@@ -188,9 +188,7 @@ void fft_3d( fftw_dist_handler* fft, double *data_direct, fftw_complex* data_rec
 	  for(i3 = 0; i3 < n3; i3++){
 
 	    index = index_f(i1, i2 + nblock*block_dim, i3, fft -> local_n1, n2, n3);
-
 	    index_buf = index_f(i1 + fft->local_n1 * nblock, i2, i3, n1, block_dim, n3);
-
 	    tmp_buf[index_buf] = data_rec[index];
 
 	  }
@@ -201,7 +199,6 @@ void fft_3d( fftw_dist_handler* fft, double *data_direct, fftw_complex* data_rec
     // Perform an Alltoall communication 
 
     send_size = n3 * block_dim * fft -> local_n1;
-
     MPI_Alltoall(MPI_IN_PLACE, send_size, MPI_DOUBLE_COMPLEX, tmp_buf, send_size, MPI_DOUBLE_COMPLEX, fft -> mpi_comm);
 
     /*  among i1 dimension */
@@ -212,7 +209,6 @@ void fft_3d( fftw_dist_handler* fft, double *data_direct, fftw_complex* data_rec
 	  
 	  index = index_f(i1, i2, i3, n1, block_dim, n3);
 	  fft -> fftw_data[i1] = tmp_buf[index];
-	  /* fft -> fftw_data[i1] = data_rec[index]; */
 
 	}
 
@@ -221,7 +217,6 @@ void fft_3d( fftw_dist_handler* fft, double *data_direct, fftw_complex* data_rec
 	for(i1 = 0; i1 < n1; i1++){
 
 	  index = index_f(i1, i2, i3, n1, block_dim, n3);
-	  /* data_rec[index] = fft -> fftw_data[i1]; */
 	  tmp_buf[index] = fft -> fftw_data[i1];
 
 	}
@@ -241,9 +236,11 @@ void fft_3d( fftw_dist_handler* fft, double *data_direct, fftw_complex* data_rec
       for(i1 = 0; i1 < fft->local_n1; i1++){
 	for(i2 = 0; i2 < block_dim; i2++){
 	  for(i3 = 0; i3 < n3; i3++){
+
 	    index = index_f(i1, i2 + nblock*block_dim, i3, fft -> local_n1, n2, n3);
 	    index_buf = index_f(i1 + fft->local_n1 * nblock, i2, i3, n1, block_dim, n3);
 	    data_rec[index] = tmp_buf[index_buf];
+
 	  }
 	}
       }
@@ -323,7 +320,6 @@ void fft_3d( fftw_dist_handler* fft, double *data_direct, fftw_complex* data_rec
 	for( i1 = 0; i1 < n1; i1++ ){
 	  
 	  index = index_f(i1, i2, i3, n1, block_dim, n3);
-	  /* fft -> fftw_data[i1] = data_rec[index]; */
 	  fft -> fftw_data[i1] = tmp_buf[index];
 
 	}
@@ -333,7 +329,6 @@ void fft_3d( fftw_dist_handler* fft, double *data_direct, fftw_complex* data_rec
 	for(i1 = 0; i1 < n1; i1++){
 
 	  index = index_f(i1, i2, i3, n1, block_dim, n3);
-	  /* data_direct[index] = creal(fft -> fftw_data[i1]) * fac; */
 	  tmp_buf[index] = fft -> fftw_data[i1];
 
 	}
