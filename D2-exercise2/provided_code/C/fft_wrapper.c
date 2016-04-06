@@ -17,6 +17,7 @@
 #include <complex.h>
 #include <fftw3.h>
 #include <mpi.h>
+#include <stdlib.h>
 
 double seconds(){
 /* Return the second elapsed since Epoch (00:00:00 UTC, January 1, 1970) */
@@ -67,7 +68,7 @@ void init_fftw(fftw_dist_handler *fft, int n1, int n2, int n3, MPI_Comm comm){
   fft->n2 = n2;
   fft->n3 = n3;
   fft->local_n1 = n1 / npes;
-  fft->local_n1_offset = n2 * n3 * mype;
+  fft->local_n1_offset = fft -> local_n1 * mype;
   fft->global_size_grid = n1 * n2 * n3;
   fft->local_size_grid = n2 * n3 * n1 / npes;
 
@@ -137,8 +138,10 @@ void close_fftw( fftw_dist_handler *fft ){
 void fft_3d( fftw_dist_handler* fft, double *data_direct, fftw_complex* data_rec, bool direct_to_reciprocal ){
 
   double fac;
-  int i1, i2, i3, index; //, start_index, end_index, index_buf, i2_loc;
-  int n2 = fft->n2, n3 = fft->n3, n1 = fft->n1, npes, block_dim; //, nblock;
+  int i1, i2, i3, index, index_buf, send_size; //start_index, end_index, i2_loc;
+  int n2 = fft->n2, n3 = fft->n3, n1 = fft->n1, npes, block_dim, nblock;
+
+  fftw_complex *tmp_buf = (fftw_complex*) malloc(fft->local_size_grid * sizeof(fftw_complex));
 
   /* Allocate buffers to send and receive data */
 
@@ -146,22 +149,16 @@ void fft_3d( fftw_dist_handler* fft, double *data_direct, fftw_complex* data_rec
     
   // Now distinguish in which direction the FFT is performed
   if( direct_to_reciprocal ){
-
     /* among i3 dimension */
     for( i1 = 0; i1 < fft->local_n1; i1++ ){
       for( i2 = 0; i2 < n2; i2++ ){
 	for( i3 = 0; i3 < n3; i3++ ){
-
 	  index = index_f(i1, i2, i3, fft -> local_n1, n2, n3);
 	  fft -> fftw_data[i3] = data_direct[index] + 0.0 * I;
-
 	}
-
 	fftw_execute_dft( fft -> fw_plan_i3, fft -> fftw_data, fft -> fftw_data);
-
 	index = index_f(i1, i2, 0, fft -> local_n1, n2, n3);
 	memcpy(&(data_rec[index]), fft->fftw_data, n3 * sizeof(fftw_complex));
-
       }
     }
       
@@ -169,41 +166,53 @@ void fft_3d( fftw_dist_handler* fft, double *data_direct, fftw_complex* data_rec
     for( i1 = 0; i1 < fft->local_n1; i1++ ){
       for( i3 = 0; i3 < n3; i3++ ){
 	for( i2 = 0; i2 < n2; i2++ ){
-
 	  index = index_f(i1, i2, i3, fft -> local_n1, n2, n3);
 	  fft -> fftw_data[i2] = data_rec[index];
-
 	}
-
 	fftw_execute_dft( fft -> fw_plan_i2, fft -> fftw_data, fft -> fftw_data);
-	
 	for(i2 = 0; i2 < n2; i2++){
-
 	  index = index_f(i1, i2, i3, fft -> local_n1, n2, n3);
 	  data_rec[index] = fft -> fftw_data[i2];
-
 	}
       }
     }
-
     /*
      * Reorder the different data blocks to be contigous in memory.
      * The new distribution will allow to use the Alltoall function
-     *
      */
+
+    block_dim = n2 / npes;
+    for(nblock = 0; nblock < npes; nblock++){
+      for(i1 = 0; i1 < fft->local_n1; i1++){
+	for(i2 = 0; i2 < block_dim; i2++){
+	  for(i3 = 0; i3 < n3; i3++){
+
+	    index = index_f(i1, i2 + nblock*block_dim, i3, fft -> local_n1, n2, n3);
+
+	    index_buf = index_f(i1 + fft->local_n1 * nblock, i2, i3, n1, block_dim, n3);
+
+	    tmp_buf[index_buf] = data_rec[index];
+
+	  }
+	}
+      }      
+    }
 
     // Perform an Alltoall communication 
 
-    /*  among i1 dimension */
+    send_size = n3 * block_dim * fft -> local_n1;
 
-    block_dim = n2 / npes;
+    MPI_Alltoall(MPI_IN_PLACE, send_size, MPI_DOUBLE_COMPLEX, tmp_buf, send_size, MPI_DOUBLE_COMPLEX, fft -> mpi_comm);
+
+    /*  among i1 dimension */
 
     for( i3 = 0; i3 < n3; i3++ ){
       for( i2 = 0; i2 < block_dim; i2++ ){
 	for( i1 = 0; i1 < n1; i1++ ){
 	  
 	  index = index_f(i1, i2, i3, n1, block_dim, n3);
-	  fft -> fftw_data[i1] = data_rec[index];
+	  fft -> fftw_data[i1] = tmp_buf[index];
+	  /* fft -> fftw_data[i1] = data_rec[index]; */
 
 	}
 
@@ -212,7 +221,8 @@ void fft_3d( fftw_dist_handler* fft, double *data_direct, fftw_complex* data_rec
 	for(i1 = 0; i1 < n1; i1++){
 
 	  index = index_f(i1, i2, i3, n1, block_dim, n3);
-	  data_rec[index] = fft -> fftw_data[i1];
+	  /* data_rec[index] = fft -> fftw_data[i1]; */
+	  tmp_buf[index] = fft -> fftw_data[i1];
 
 	}
       }
@@ -220,10 +230,24 @@ void fft_3d( fftw_dist_handler* fft, double *data_direct, fftw_complex* data_rec
 
     // Perform an Alltoall communication 
 
+    MPI_Alltoall(MPI_IN_PLACE, send_size, MPI_DOUBLE_COMPLEX, tmp_buf, send_size, MPI_DOUBLE_COMPLEX, fft -> mpi_comm);
+
     /*
      * Reoder the different data blocks to be consistent with the initial distribution.
      *
      */      
+
+    for(nblock = 0; nblock < npes; nblock++){
+      for(i1 = 0; i1 < fft->local_n1; i1++){
+	for(i2 = 0; i2 < block_dim; i2++){
+	  for(i3 = 0; i3 < n3; i3++){
+	    index = index_f(i1, i2 + nblock*block_dim, i3, fft -> local_n1, n2, n3);
+	    index_buf = index_f(i1 + fft->local_n1 * nblock, i2, i3, n1, block_dim, n3);
+	    data_rec[index] = tmp_buf[index_buf];
+	  }
+	}
+      }
+    }
 
   }
   else{
@@ -275,18 +299,32 @@ void fft_3d( fftw_dist_handler* fft, double *data_direct, fftw_complex* data_rec
      * The new distribution will allow to use the Alltoall function
      *
      */
+    block_dim = n2 / npes;
+    for(nblock = 0; nblock < npes; nblock++){
+      for(i1 = 0; i1 < fft->local_n1; i1++){
+	for(i2 = 0; i2 < block_dim; i2++){
+	  for(i3 = 0; i3 < n3; i3++){
+	    index = index_f(i1, i2 + nblock*block_dim, i3, fft -> local_n1, n2, n3);
+	    index_buf = index_f(i1 + fft->local_n1 * nblock, i2, i3, n1, block_dim, n3);
+	    tmp_buf[index_buf] = data_rec[index];
+	  }
+	}
+      }      
+    }
 
     // Perform an Alltoall communication 
+    send_size = n3 * block_dim * fft -> local_n1;
+    MPI_Alltoall(MPI_IN_PLACE, send_size, MPI_DOUBLE_COMPLEX, tmp_buf, send_size, MPI_DOUBLE_COMPLEX, fft -> mpi_comm);
 
     /*  among i1 dimension */
-    block_dim = n2 / npes;
 
     for( i3 = 0; i3 < n3; i3++ ){
       for( i2 = 0; i2 < block_dim; i2++ ){
 	for( i1 = 0; i1 < n1; i1++ ){
 	  
 	  index = index_f(i1, i2, i3, n1, block_dim, n3);
-	  fft -> fftw_data[i1] = data_rec[index];
+	  /* fft -> fftw_data[i1] = data_rec[index]; */
+	  fft -> fftw_data[i1] = tmp_buf[index];
 
 	}
 
@@ -295,19 +333,32 @@ void fft_3d( fftw_dist_handler* fft, double *data_direct, fftw_complex* data_rec
 	for(i1 = 0; i1 < n1; i1++){
 
 	  index = index_f(i1, i2, i3, n1, block_dim, n3);
-	  data_direct[index] = creal(fft -> fftw_data[i1]) * fac;
+	  /* data_direct[index] = creal(fft -> fftw_data[i1]) * fac; */
+	  tmp_buf[index] = fft -> fftw_data[i1];
 
 	}
       }
     }
 
     // Perform an Alltoall communication 
+    MPI_Alltoall(MPI_IN_PLACE, send_size, MPI_DOUBLE_COMPLEX, tmp_buf, send_size, MPI_DOUBLE_COMPLEX, fft -> mpi_comm);
 
     /*
      * Reoder the different data blocks to be consistent with the initial distribution.
      *
      */      
-
+    for(nblock = 0; nblock < npes; nblock++){
+      for(i1 = 0; i1 < fft->local_n1; i1++){
+	for(i2 = 0; i2 < block_dim; i2++){
+	  for(i3 = 0; i3 < n3; i3++){
+	    index = index_f(i1, i2 + nblock*block_dim, i3, fft -> local_n1, n2, n3);
+	    index_buf = index_f(i1 + fft->local_n1 * nblock, i2, i3, n1, block_dim, n3);
+	    data_direct[index] = creal(tmp_buf[index_buf]) * fac;
+	  }
+	}
+      }
+    }
   }
-  
+
+  free(tmp_buf);
 }
