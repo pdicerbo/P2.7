@@ -221,7 +221,7 @@ int main( int argc, char* argv[] ){
 
     if( mype == 0 ){
       end = seconds();
-      fp = fopen("/home/pdicerbo/pdicerbo-P2.7/timing_my_version.dat", "a");
+      fp = fopen("/home/pdicerbo/pdicerbo-P2.7/Results/timing_my_version.dat", "a");
       fprintf(fp, "%d\t%lg\n", npes, (end - start));
       fclose(fp);
     }

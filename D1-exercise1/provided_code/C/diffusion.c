@@ -33,11 +33,13 @@ int main(int argc, char** argv){
     // Dimensions of the system
     double L1 = 10., L2 = 10., L3 = 20.;
     // Grid size
-    int n1 = 48, n2 = 48, n3 = 96;
+    // int n1 = 48, n2 = 48, n3 = 96;
+    int n1 = 480, n2 = 480, n3 = 96;
     // time step for time integration
-    double dt = 2.e-3; 
+    /* double dt = 2.e-3;  */
+    double dt = 2.e-8; 
     // number of time steps
-    int nstep = 101; 
+    int nstep = 2; //101; 
     // Radius of diffusion channel
     double rad_diff = 0.7;
     // Radius of starting concentration
@@ -52,21 +54,24 @@ int main(int argc, char** argv){
     double x1, x2 , x3, rr, r2mean;
     fftw_mpi_handler fft_h;
 
+    FILE* fp;
+    int mype, npes;
+
     /* 
      * Initializzation of the MPI environment 
      *
      */
    
     MPI_Init(&argc, &argv);
+    MPI_Comm_rank(MPI_COMM_WORLD, &mype);
+    MPI_Comm_size(MPI_COMM_WORLD, &npes);
     
     /*
      * initialize the fftw system and local dimension
      * as the value returned from the parallel FFT grid initializzation 
      *
      */
-    
     init_fftw( &fft_h, n1, n2, n3, MPI_COMM_WORLD);
-
   
     /*
      * Allocate distribute memory arrays
@@ -130,9 +135,9 @@ int main(int argc, char** argv){
      *
      */
 
-    plot_data_2d("diffusivity", n1, n2, n3, fft_h.local_n1, fft_h.local_n1_offset, 1, diffusivity);
-    plot_data_2d("diffusivity", n1, n2, n3, fft_h.local_n1, fft_h.local_n1_offset, 2, diffusivity);
-    plot_data_2d("diffusivity", n1, n2, n3, fft_h.local_n1, fft_h.local_n1_offset, 3, diffusivity);
+    /* plot_data_2d("diffusivity", n1, n2, n3, fft_h.local_n1, fft_h.local_n1_offset, 1, diffusivity); */
+    /* plot_data_2d("diffusivity", n1, n2, n3, fft_h.local_n1, fft_h.local_n1_offset, 2, diffusivity); */
+    /* plot_data_2d("diffusivity", n1, n2, n3, fft_h.local_n1, fft_h.local_n1_offset, 3, diffusivity); */
     
     
     fac= L1*L2*L3/(n1*n2*n3);
@@ -215,16 +220,25 @@ int main(int argc, char** argv){
             ss *= fac;
             r2mean *= fac;
             end = seconds();
-            printf(" %d %17.15f %17.15f Elapsed time per iteration %f \n ", istep, r2mean, ss, (end-start)/istep);
+	    if(mype == 0)
+	      printf(" %d %17.15f %17.15f Elapsed time per iteration %f \n ", istep, r2mean, ss, (end-start)/istep);
             // HINT: Use parallel version of output routines
 	    
-	    plot_data_2d("concentration", n1, n2, n3, fft_h.local_n1, fft_h.local_n1_offset, 2, conc);
-	    plot_data_1d("1d_conc", n1, n2, n3, fft_h.local_n1, fft_h.local_n1_offset, 3, conc);
+	    // plot_data_2d("concentration", n1, n2, n3, fft_h.local_n1, fft_h.local_n1_offset, 2, conc);
+	    // plot_data_1d("1d_conc", n1, n2, n3, fft_h.local_n1, fft_h.local_n1_offset, 3, conc);
 	  
 	  }
 	
       } 
     
+    if( mype == 0 ){
+      end = seconds();
+      fp = fopen("/home/pdicerbo/pdicerbo-P2.7/Results/timing_fftw.dat", "a");
+      fprintf(fp, "%d\t%lg\n", npes, (end - start));
+      fclose(fp);
+    }
+
+
     close_fftw(&fft_h);
     free(diffusivity);
     free(conc);
