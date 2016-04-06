@@ -138,12 +138,11 @@ void close_fftw( fftw_dist_handler *fft ){
 void fft_3d( fftw_dist_handler* fft, double *data_direct, fftw_complex* data_rec, bool direct_to_reciprocal ){
 
   double fac;
-  int i1, i2, i3, index, index_buf, send_size; //start_index, end_index, i2_loc;
+  int i1, i2, i3, index, index_buf, send_size;
   int n2 = fft->n2, n3 = fft->n3, n1 = fft->n1, npes, block_dim, nblock;
 
-  fftw_complex *tmp_buf = (fftw_complex*) malloc(fft->local_size_grid * sizeof(fftw_complex));
-
   /* Allocate buffers to send and receive data */
+  fftw_complex *tmp_buf = (fftw_complex*) malloc(fft->local_size_grid * sizeof(fftw_complex));
 
   MPI_Comm_size( fft->mpi_comm, &npes );
     
@@ -355,5 +354,5 @@ void fft_3d( fftw_dist_handler* fft, double *data_direct, fftw_complex* data_rec
     }
   }
 
-  free(tmp_buf);
+  fftw_free(tmp_buf);
 }
