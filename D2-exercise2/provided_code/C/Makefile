@@ -1,5 +1,5 @@
 CC=mpicc
-CFLAGS = -O0 -g -Wall -I./ -I$(FFTW_INC) -I/u/shared/programs/x86_64/openmpi/1.8.3/gnu/4.9.2/torque/include/ 
+CFLAGS = -O3 -Wall -I./ -I$(FFTW_INC) -I/u/shared/programs/x86_64/openmpi/1.8.3/gnu/4.9.2/torque/include/ 
 LIBS = -L$(FFTW_LIB) -lfftw3_mpi -lfftw3 -lm		
 EXE = diffusion.x
 SRC = diffusion.c plot_data.c fft_wrapper.c derivative.c 

@@ -1,8 +1,8 @@
 #!/bin/bash
 
 #PBS -N ExFftw
-#PBS -l walltime=00:02:00
-#PBS -l nodes=1:ppn=20
+#PBS -l walltime=01:30:00
+#PBS -l nodes=2:ppn=20
 #PBS -q reserved3
 
 module load openmpi/1.8.3/gnu/4.9.2
@@ -10,4 +10,10 @@ module load fftw/3.3.4/gnu/4.9.2
 
 cd $PBS_O_WORKDIR
 
-mpirun -np 1 diffusion.x
+for NPE in 32 40 #1 2 4 8 16 20
+do
+    for COUNT in 1 2 3 4
+    do
+	mpirun -np $NPE diffusion.x
+    done
+done
