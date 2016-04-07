@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 
 my_timing = "timing_my_version.dat"
 fftw = "timing_fftw.dat"
+# my_timing = "timing_my_version_big.dat"
+# fftw = "timing_fftw_big.dat"
 n_rep = 4
 
 dat = np.loadtxt(my_timing)
@@ -62,16 +64,21 @@ plt.xlabel("NPES")
 plt.ylabel("time (s)")
 plt.legend()
 plt.savefig("timing.png")
+# plt.savefig("timing_big.png")
 plt.close('All')
 
 plt.figure()
 scaling = time_def[0] / time_def
 fscaling = fftw_time_def[0] / fftw_time_def
+
 plt.plot(nprocs, nprocs)
+# plt.plot(nprocs, nprocs/20)
+
 plt.errorbar(nprocs, scaling, err, label = "MyVersion")
 plt.errorbar(nprocs, fscaling, fftw_err, label = "FFTW")
-plt.title("Scaling (My Version)")
+plt.title("Scaling")
 plt.xlabel("NPES")
 plt.ylabel("speedup")
 plt.legend(bbox_to_anchor = (0.325,1.))
 plt.savefig("scaling.png")
+# plt.savefig("scaling_big.png")

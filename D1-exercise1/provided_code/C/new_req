@@ -1,8 +1,8 @@
 #!/bin/bash
 
 #PBS -N ExFftw
-#PBS -l walltime=00:03:00
-#PBS -l nodes=4:ppn=20
+#PBS -l walltime=00:02:30
+#PBS -l nodes=8:ppn=20
 #PBS -q reserved3
 
 module load openmpi/1.8.3/gnu/4.9.2
@@ -10,7 +10,7 @@ module load fftw/3.3.4/gnu/4.9.2
 
 cd $PBS_O_WORKDIR
 
-for NPE in 80 #32 40 #1 2 4 8 16 20 #32 40
+for NPE in 160 #32 40 #1 2 4 8 16 20 #32 40
 do
     for COUNT in 1 2 3 4
     do

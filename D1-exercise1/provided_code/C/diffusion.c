@@ -34,7 +34,8 @@ int main(int argc, char** argv){
     double L1 = 10., L2 = 10., L3 = 20.;
     // Grid size
     // int n1 = 48, n2 = 48, n3 = 96;
-    int n1 = 480, n2 = 480, n3 = 96;
+    // int n1 = 480, n2 = 480, n3 = 96;
+    int n1 = 1440, n2 = 1440, n3 = 100;
     // time step for time integration
     /* double dt = 2.e-3;  */
     double dt = 2.e-8; 
@@ -233,7 +234,7 @@ int main(int argc, char** argv){
     
     if( mype == 0 ){
       end = seconds();
-      fp = fopen("/home/pdicerbo/pdicerbo-P2.7/Results/timing_fftw.dat", "a");
+      fp = fopen("/home/pdicerbo/pdicerbo-P2.7/Results/timing_fftw_big.dat", "a");
       fprintf(fp, "%d\t%lg\n", npes, (end - start));
       fclose(fp);
     }
