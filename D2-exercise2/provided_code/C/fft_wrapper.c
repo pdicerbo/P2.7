@@ -102,7 +102,7 @@ void init_fftw(fftw_dist_handler *fft, int n1, int n2, int n3, MPI_Comm comm){
   fft->bw_plan_i3 = fftw_plan_dft_1d(n3, fft -> fftw_data, fft -> fftw_data,
 				     FFTW_BACKWARD, FFTW_ESTIMATE);
 
-  // NEW PLANS....
+  // 2D PLANS...
   fft->fw_plan_i23 = fftw_plan_dft_2d(n2, n3, fft -> fftw_data, fft -> fftw_data,
 				     FFTW_FORWARD, FFTW_ESTIMATE);
 
@@ -170,7 +170,7 @@ void fft_3d( fftw_dist_handler* fft, double *data_direct, fftw_complex* data_rec
     
   // Now distinguish in which direction the FFT is performed
   if( direct_to_reciprocal ){
-    /* among i2 x i3 dimension */
+    /* among i2xi3 dimension */
     for( i1 = 0; i1 < fft->local_n1; i1++ ){
 
       /* loop over the i1th face */
@@ -211,30 +211,25 @@ void fft_3d( fftw_dist_handler* fft, double *data_direct, fftw_complex* data_rec
     send_size = n3 * block_dim * fft -> local_n1;
     MPI_Alltoall(MPI_IN_PLACE, send_size, MPI_DOUBLE_COMPLEX, tmp_buf, send_size, MPI_DOUBLE_COMPLEX, fft -> mpi_comm);
 
-    /*  among i1xi3 dimension */
+/*     /\*  among i1 dimension *\/ */
 
     for( i2 = 0; i2 < block_dim; i2++ ){
-      
-      for( i1 = 0; i1 < n1; i1++ ){
-      	for( i3 = 0; i3 < n3; i3++ ){
+      for( i3 = 0; i3 < n3; i3++ ){
+	for( i1 = 0; i1 < n1; i1++ ){
 	  
-      	  index = index_f(i1, i2, i3, n1, block_dim, n3);
-      	  fft -> fftw_data[i1*n3 + i3] = tmp_buf[index];
-
-      	}
+	  index = index_f(i1, i2, i3, n1, block_dim, n3);
+	  fft -> fftw_data[i1] = tmp_buf[index];
+	  
+	}
+	fftw_execute_dft( fft -> fw_plan_i1, fft -> fftw_data, fft -> fftw_data);
+	
+	for(i1 = 0; i1 < n1; i1++){
+	  index = index_f(i1, i2, i3, n1, block_dim, n3);
+	  tmp_buf[index] = fft -> fftw_data[i1];
+	}	
       }
-      
-      fftw_execute_dft( fft -> fw_plan_i13, fft -> fftw_data, fft -> fftw_data);
-      
-      for(i1 = 0; i1 < n1; i1++){
-      	for(i3 = 0; i3 < n3; i3++){
-      	  index = index_f(i1, i2, i3, n1, block_dim, n3);
-      	  tmp_buf[index] = fft -> fftw_data[i1*n3 + i3];
-      	}
-      }
-      
     }
-
+    
     // Perform an Alltoall communication 
 
     MPI_Alltoall(MPI_IN_PLACE, send_size, MPI_DOUBLE_COMPLEX, tmp_buf, send_size, MPI_DOUBLE_COMPLEX, fft -> mpi_comm);
@@ -263,15 +258,15 @@ void fft_3d( fftw_dist_handler* fft, double *data_direct, fftw_complex* data_rec
     fac = 1.0 / ( n1 * n2 * n3 );
 
     /* Implement the reverse transform */
-    /* among i3 dimension */
+    /* among i2xi3 dimension */
     for( i1 = 0; i1 < fft->local_n1; i1++ ){
 
       index = index_f(i1, 0, 0, fft -> local_n1, n2, n3);
-      fftw_execute_dft( fft -> bw_plan_i23, &(data_rec[index]), fft -> fftw_data);
 
-      /* fftw_execute_dft( fft -> bw_plan_i1, fft -> fftw_data, fft -> fftw_data); */
+      fftw_execute_dft( fft -> bw_plan_i23, &(data_rec[index]), fft -> fftw_data);
       
       memcpy(&(data_rec[index]), fft->fftw_data, n2 * n3 * sizeof(fftw_complex));
+      
     }
     
     /*
@@ -297,28 +292,26 @@ void fft_3d( fftw_dist_handler* fft, double *data_direct, fftw_complex* data_rec
     send_size = n3 * block_dim * fft -> local_n1;
     MPI_Alltoall(MPI_IN_PLACE, send_size, MPI_DOUBLE_COMPLEX, tmp_buf, send_size, MPI_DOUBLE_COMPLEX, fft -> mpi_comm);
 
-    /*  among i1 x 13 dimension */
+    /*  among i1 dimension */
 
     for( i2 = 0; i2 < block_dim; i2++ ){
-      for( i1 = 0; i1 < n1; i1++ ){
-	for( i3 = 0; i3 < n3; i3++ ){
+      for( i3 = 0; i3 < n3; i3++ ){
+	for( i1 = 0; i1 < n1; i1++ ){
 	  
 	  index = index_f(i1, i2, i3, n1, block_dim, n3);
-	  fft -> fftw_data[i1*n3 + i3] = tmp_buf[index];
+	  fft -> fftw_data[i1] = tmp_buf[index];
 
 	}
-      }
-      
-      fftw_execute_dft( fft -> bw_plan_i13, fft -> fftw_data, fft -> fftw_data);
-      
-      for(i1 = 0; i1 < n1; i1++){
-	for(i3 = 0; i3 < n3; i3++){
+	fftw_execute_dft( fft -> bw_plan_i1, fft -> fftw_data, fft -> fftw_data);
+	
+	for(i1 = 0; i1 < n1; i1++){
 	  index = index_f(i1, i2, i3, n1, block_dim, n3);
-	  tmp_buf[index] = fft -> fftw_data[i1*n3 + i3];
+	  tmp_buf[index] = fft -> fftw_data[i1];
 	}
+	
       }
     }
-
+    
     // Perform an Alltoall communication 
     MPI_Alltoall(MPI_IN_PLACE, send_size, MPI_DOUBLE_COMPLEX, tmp_buf, send_size, MPI_DOUBLE_COMPLEX, fft -> mpi_comm);
 
