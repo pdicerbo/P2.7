@@ -25,6 +25,12 @@ typedef struct {
   fftw_plan bw_plan_i2;
   fftw_plan bw_plan_i3;
 
+  fftw_plan fw_plan_i23;
+  fftw_plan fw_plan_i13;
+  fftw_plan bw_plan_i23;
+  fftw_plan bw_plan_i13;
+  
+  
   fftw_complex *fftw_data;
   ptrdiff_t global_size_grid;
   ptrdiff_t local_size_grid;
