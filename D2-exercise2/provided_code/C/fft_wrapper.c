@@ -254,16 +254,25 @@ void fft_3d( fftw_dist_handler* fft, double *data_direct, fftw_complex* data_rec
     /* among i3 dimension */
     for( i1 = 0; i1 < fft->local_n1; i1++ ){
       for( i2 = 0; i2 < n2; i2++ ){
+	/***
 	for( i3 = 0; i3 < n3; i3++ ){
 
 	  index = index_f(i1, i2, i3, fft -> local_n1, n2, n3);
 	  fft -> fftw_data[i3] = data_rec[index];
 
 	}
-
+	
 	fftw_execute_dft( fft -> bw_plan_i3, fft -> fftw_data, fft -> fftw_data);
 
 	index = index_f(i1, i2, 0, fft -> local_n1, n2, n3);
+	memcpy(&(data_rec[index]), fft->fftw_data, n3 * sizeof(fftw_complex));
+
+	***/
+
+	index = index_f(i1, i2, 0, fft -> local_n1, n2, n3);
+
+	fftw_execute_dft( fft -> bw_plan_i3, &(data_rec[index]), fft -> fftw_data);
+
 	memcpy(&(data_rec[index]), fft->fftw_data, n3 * sizeof(fftw_complex));
 
       }
