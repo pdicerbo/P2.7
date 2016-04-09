@@ -15,7 +15,7 @@ the label "2D+1D" refers to data obtained with the "fft_3d" function.
 Plots
 ------------------
 
-These behaviours are obtained with a matrix with size 480x480x96 and performing only 2 steps of integration.
+These behaviours are obtained with a matrix with size **480x480x96** and performing only 2 steps of integration.
 
 .. image:: timing_2D_small.png
 
