@@ -106,15 +106,8 @@ void init_fftw(fftw_dist_handler *fft, int n1, int n2, int n3, MPI_Comm comm){
   fft->fw_plan_i23 = fftw_plan_dft_2d(n2, n3, fft -> fftw_data, fft -> fftw_data,
 				     FFTW_FORWARD, FFTW_ESTIMATE);
 
-  fft->fw_plan_i13 = fftw_plan_dft_2d(n1, n3, fft -> fftw_data, fft -> fftw_data,
-				     FFTW_FORWARD, FFTW_ESTIMATE);
-
   fft->bw_plan_i23 = fftw_plan_dft_2d(n2, n3, fft -> fftw_data, fft -> fftw_data,
 				     FFTW_BACKWARD, FFTW_ESTIMATE);
-
-  fft->bw_plan_i13 = fftw_plan_dft_2d(n1, n3, fft -> fftw_data, fft -> fftw_data,
-				     FFTW_BACKWARD, FFTW_ESTIMATE);
-
   
 }
 
@@ -129,10 +122,7 @@ void close_fftw( fftw_dist_handler *fft ){
     fftw_destroy_plan( fft->fw_plan_i3 );
 
     fftw_destroy_plan( fft->fw_plan_i23 );
-    fftw_destroy_plan( fft->fw_plan_i13 );
     fftw_destroy_plan( fft->bw_plan_i23 );
-    fftw_destroy_plan( fft->bw_plan_i13 );
-
     
     fftw_free( fft->fftw_data );
 }
