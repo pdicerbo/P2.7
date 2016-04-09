@@ -13,14 +13,11 @@ In the following plot the label "MyVersion" refers to data obtained with the "ol
 the label "2D+1D" refers to data obtained with the "fft_3d" function.
 
 Plots
-==================
+------------------
 
 These behaviours are obtained with a matrix with size 480x480x96 and performing only 2 steps of integration.
 
-.. image:: ./timing_2D_small.png
-   :alt: Frequencies
-   :scale:  100%
-   :align: middle
+.. image:: timing_2D_small.png
 
 Here the scaling obtained:
 	   
