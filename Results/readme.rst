@@ -17,14 +17,14 @@ Plots
 
 These behaviours are obtained with a matrix with size 480x480x96 and performing only 2 steps of integration.
 
-.. image:: ./timing_2D.png
+.. image:: timing_2D_small.png
    :alt: Frequencies
    :scale:  100%
    :align: middle
 
 Here the scaling obtained:
 	   
-.. image:: ./scaling_2D.png
+.. image:: scaling_2D_small.png
    :alt: Frequencies
    :scale:  100%
    :align: middle
