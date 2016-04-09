@@ -22,6 +22,3 @@ These behaviours are obtained with a matrix with size 480x480x96 and performing 
 Here the scaling obtained:
 	   
 .. image:: ./scaling_2D_small.png
-   :alt: Frequencies
-   :scale:  100%
-   :align: middle
