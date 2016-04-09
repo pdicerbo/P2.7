@@ -25,6 +25,9 @@ typedef struct {
   fftw_plan bw_plan_i2;
   fftw_plan bw_plan_i3;
 
+  fftw_plan fw_plan_i2D;
+  fftw_plan bw_plan_i2D;  
+  
   fftw_complex *fftw_data;
   ptrdiff_t global_size_grid;
   ptrdiff_t local_size_grid;
@@ -54,5 +57,6 @@ void close_fftw( fftw_dist_handler* fft );
 
 void derivative( fftw_dist_handler* fft,int n1, int n2, int n3, double L1, double L2, double L3, int ipol, double* data, double* deriv );
 void fft_3d( fftw_dist_handler* fft, double *data_direct, fftw_complex* data_rec, bool direct_to_reciprocal );
+void old_fft_3d( fftw_dist_handler* fft, double *data_direct, fftw_complex* data_rec, bool direct_to_reciprocal );
 
 #endif

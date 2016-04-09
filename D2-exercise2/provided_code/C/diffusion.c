@@ -33,7 +33,7 @@ int main( int argc, char* argv[] ){
     // time step for time integration
     double dt = 2.e-8; 
     // number of time steps
-    int nstep = 2; //01; 
+    int nstep = 2; //101; 
     // Radius of diffusion channel
     double rad_diff = 0.7;
     // Radius of starting concentration
@@ -216,13 +216,17 @@ int main( int argc, char* argv[] ){
             // HINT: Use parallel version of output routines
             //plot_data_2d("concentration", n1, n2, n3, 2, conc);
 	    // plot_data_1d("1d_conc", n1, n2, n3, 3, conc);
+
+	    /* plot_data_2d("concentration", n1, n2, n3, fft_h.local_n1, fft_h.local_n1_offset, 2, conc); */
+	    /* plot_data_1d("1d_conc", n1, n2, n3, fft_h.local_n1, fft_h.local_n1_offset, 3, conc); */
+	    
 	}	
 	
     }
 
     if( mype == 0 ){
       end = seconds();
-      fp = fopen("/home/pdicerbo/pdicerbo-P2.7/Results/timing_my_version_big.dat", "a");
+      fp = fopen("/home/pdicerbo/pdicerbo-P2.7/Results/timing_2D.dat", "a");
       fprintf(fp, "%d\t%lg\n", npes, (end - start));
       fclose(fp);
     }
