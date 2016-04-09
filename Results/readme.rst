@@ -35,3 +35,6 @@ from 1 to 8.
 Here the corresponding scaling:
 	   
 .. image:: ./scaling_2D_big.png
+
+The obtained results seems to be a bit weird, but I don't know the real reason of that. I'm sorry, but I
+don't have enough time to analize these results.
