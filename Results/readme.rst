@@ -22,3 +22,6 @@ These behaviours are obtained with a matrix with size 480x480x96 and performing 
 Here the scaling obtained:
 	   
 .. image:: ./scaling_2D_small.png
+
+As one can see, if NPES <= 20 (namely we are using one single node), the best performance (in terms of
+time needed to run the program) is obtained with the "2D+1D" version of the code.
