@@ -1,11 +1,14 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-# my_timing = "timing_my_version.dat"
-# fftw = "timing_fftw.dat"
-my_timing = "timing_my_version_big.dat"
-fftw = "timing_fftw_big.dat"
-dim2 = "timing_2D.dat"
+my_timing = "timing_my_version.dat"
+fftw = "timing_fftw.dat"
+dim2 = "timing_2D_small.dat"
+
+# my_timing = "timing_my_version_big.dat"
+# fftw = "timing_fftw_big.dat"
+# dim2 = "timing_2D.dat"
+
 n_rep = 4
 
 dat = np.loadtxt(my_timing)
@@ -81,7 +84,8 @@ plt.xlabel("NPES")
 plt.ylabel("time (s)")
 plt.legend()
 # plt.savefig("timing.png")
-plt.savefig("timing_with_2D.png")
+# plt.savefig("timing_with_2D.png")
+plt.savefig("timing_2D_small.png")
 plt.close('All')
 
 plt.figure()
@@ -89,8 +93,8 @@ scaling = time_def[0] / time_def
 fscaling = fftw_time_def[0] / fftw_time_def
 D2scaling = D2_time_def[0] / D2_time_def
 
-# plt.plot(nprocs, nprocs)
-plt.plot(nprocs, nprocs/20)
+plt.plot(nprocs, nprocs)
+# plt.plot(nprocs, nprocs/20)
 
 plt.errorbar(nprocs, scaling, err, label = "MyVersion")
 plt.errorbar(nprocs, fscaling, fftw_err, label = "FFTW")
@@ -100,5 +104,5 @@ plt.xlabel("NPES")
 plt.ylabel("speedup")
 plt.legend(bbox_to_anchor = (0.325,1.))
 # plt.savefig("scaling.png")
-# plt.savefig("scaling_big.png")
-plt.savefig("scaling_with_2D.png")
+# plt.savefig("scaling_with_2D.png")
+plt.savefig("scaling_2D_small.png")
